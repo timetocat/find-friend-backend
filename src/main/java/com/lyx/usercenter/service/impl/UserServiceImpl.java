@@ -17,7 +17,9 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -190,15 +192,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        /*// 2. 拼接sql
-        // like '%Java%' and like '%Python%'
-        for (String tags : tagNameList) {
-            queryWrapper.like("tags", tags);
-        }
-        // 3. 进行查询
-        List<User> userList = userMapper.selectList(queryWrapper);
-        return userList.stream().map(this::getSafeUser)
-                .collect(Collectors.toList());*/
         // 2. 先查询所有用户
         List<User> userList = userMapper.selectList(queryWrapper);
 
@@ -206,11 +199,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-            if (StringUtils.isBlank(tags)) {
+/*            if (StringUtils.isBlank(tags)) {
                 return false;
-            }
+            }*/
             Set<String> tempTagsSet = gson.fromJson(tags, new TypeToken<Set<String>>() {
             }.getType());
+            tempTagsSet = Optional.ofNullable(tempTagsSet)
+                    .orElse(new HashSet<>());
             for (String tag : tagNameList) {
                 if (!tempTagsSet.contains(tag)) {
                     return false;
@@ -219,6 +214,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return true;
         }).map(this::getSafeUser).collect(Collectors.toList());
 
+    }
+
+    /**
+     * 根据标签搜索用户（sql查询版）
+     *
+     * @param tagNameList
+     * @return
+     * @deprecated 过时
+     */
+    @Deprecated
+    private List<User> searchUsersByTagBySQL(List<String> tagNameList) {
+        // 1. 判空
+        if (CollUtil.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        // 2. 拼接sql
+        // like '%Java%' and like '%Python%'
+        for (String tags : tagNameList) {
+            queryWrapper.like("tags", tags);
+        }
+        // 3. 进行查询
+        List<User> userList = userMapper.selectList(queryWrapper);
+        return userList.stream().map(this::getSafeUser)
+                .collect(Collectors.toList());
     }
 }
 

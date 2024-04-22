@@ -1,5 +1,6 @@
 package com.lyx.usercenter.model.domain.request;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,6 +14,9 @@ public class UserLoginRequest implements Serializable {
 
     private static final long serialVersionUID = 4619562148257145703L;
 
-    String userAccount;
-    String userPassword;
+    @ApiModelProperty(value = "用户账号", required = true)
+    private String userAccount;
+
+    @ApiModelProperty(value = "密码", required = true)
+    private String userPassword;
 }
