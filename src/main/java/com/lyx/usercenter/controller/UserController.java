@@ -1,5 +1,6 @@
 package com.lyx.usercenter.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyx.usercenter.common.BaseResponse;
 import com.lyx.usercenter.common.ErrorCode;
@@ -17,7 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.lyx.usercenter.constant.UserConstant.*;
+import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
+import static com.lyx.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * @author timecat
@@ -41,7 +43,7 @@ public class UserController {
         String checkPassword = userRegisterRequest.getCheckPassword();
         // 再次校验
         if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"一项以上参数为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "一项以上参数为空");
         }
         long result = userService.userRegister(userAccount, userPassword, checkPassword);
         return ResultUtils.success(result);
@@ -88,8 +90,8 @@ public class UserController {
     @GetMapping("/search")
     public BaseResponse<List<User>> search(String username, HttpServletRequest request) {
         // 仅限管理员可查询
-        if (isAdmin(request)){
-            throw new BusinessException(ErrorCode.NO_AUTH,"无管理员权限");
+        if (isAdmin(request)) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "无管理员权限");
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotBlank(username)) {
@@ -100,6 +102,16 @@ public class UserController {
                 .map(user -> userService.getSafeUser(user))
                 .collect(Collectors.toList());
         return ResultUtils.success(list);
+    }
+
+    @GetMapping("/search/tags")
+    public BaseResponse<List<User>> searchUsersByTags
+            (@RequestParam(required = false) List<String> tagNameList) {
+        if (CollUtil.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        return ResultUtils.success(userList);
     }
 
     @PostMapping("/delete")

@@ -176,6 +176,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setUserAccount(user.getUserAccount());
         safeUser.setAvatarUrl(user.getAvatarUrl());
         safeUser.setGender(user.getGender());
+        safeUser.setProfile(user.getProfile());
+        safeUser.setTags(user.getTags());
         safeUser.setPhone(user.getPhone());
         safeUser.setEmail(user.getEmail());
         safeUser.setUserStatus(user.getUserStatus());
@@ -199,9 +201,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-/*            if (StringUtils.isBlank(tags)) {
-                return false;
-            }*/
             Set<String> tempTagsSet = gson.fromJson(tags, new TypeToken<Set<String>>() {
             }.getType());
             tempTagsSet = Optional.ofNullable(tempTagsSet)

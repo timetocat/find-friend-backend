@@ -52,6 +52,13 @@ public class User implements Serializable {
     private Integer gender;
 
     /**
+     * 个人简介
+     */
+    @ApiModelProperty("个人简介")
+    @TableField(value = "profile")
+    private String profile;
+
+    /**
      * 密码
      */
     @ApiModelProperty("密码")
