@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
 import static com.lyx.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -159,6 +160,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return 1;
     }
 
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        return user;
+    }
+
+    @Override
+    public int updateUser(User user, User loginUser) {
+        if (user == null || loginUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        long userId = user.getId();
+        if (userId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (checkUpdateFiled(user)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "更新字段为空");
+        }
+        // 如果是管理员，允许更新任意用户信息
+        // todo 管理员应该不能更新其他管理员账户
+        // 如果是自己，只允许更新自己的信息
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
+        }
+        return userMapper.updateById(user);
+    }
+
+    private boolean checkUpdateFiled(User user) {
+        // todo 没有传要更新的值就，不执行update
+
+        return false;
+    }
+
     /**
      * 用户脱敏
      *
@@ -238,6 +282,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         List<User> userList = userMapper.selectList(queryWrapper);
         return userList.stream().map(this::getSafeUser)
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    private static boolean isAdmin(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
+        return !(user == null || user.getUserRole() != ADMIN_ROLE);
+    }
+
+    /**
+     * 是否是管理员
+     *
+     * @param loginUser
+     * @return
+     */
+    private static boolean isAdmin(User loginUser) {
+        return !(loginUser == null || loginUser.getUserRole() != ADMIN_ROLE);
     }
 }
 

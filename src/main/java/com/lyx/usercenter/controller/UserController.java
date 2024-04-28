@@ -31,6 +31,12 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    /**
+     * 注册用户
+     *
+     * @param userRegisterRequest
+     * @return
+     */
     @PostMapping("/register")
     public BaseResponse<Long> register(@RequestBody UserRegisterRequest userRegisterRequest) {
         // 校验是否为空
@@ -49,6 +55,12 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 获取当前登录用户
+     *
+     * @param request
+     * @return
+     */
     @GetMapping("/current")
     public BaseResponse<User> current(HttpServletRequest request) {
         User currentUser = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
@@ -62,6 +74,13 @@ public class UserController {
         return ResultUtils.success(safeUser);
     }
 
+    /**
+     * 登录
+     *
+     * @param userLoginRequest
+     * @param request
+     * @return
+     */
     @PostMapping("/login")
     public BaseResponse<User> login(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         // 校验是否为空
@@ -78,6 +97,12 @@ public class UserController {
         return ResultUtils.success(user);
     }
 
+    /**
+     * 登出
+     *
+     * @param request
+     * @return
+     */
     @PostMapping("/logout")
     public BaseResponse<Integer> logout(HttpServletRequest request) {
         if (request == null) {
@@ -87,6 +112,13 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 根据对应用户
+     *
+     * @param username
+     * @param request
+     * @return
+     */
     @GetMapping("/search")
     public BaseResponse<List<User>> search(String username, HttpServletRequest request) {
         // 仅限管理员可查询
@@ -104,9 +136,15 @@ public class UserController {
         return ResultUtils.success(list);
     }
 
+    /**
+     * 根据标签搜索用户
+     *
+     * @param tagNameList
+     * @return
+     */
     @GetMapping("/search/tags")
     public BaseResponse<List<User>> searchUsersByTags
-            (@RequestParam(required = false) List<String> tagNameList) {
+    (@RequestParam(required = false) List<String> tagNameList) {
         if (CollUtil.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
@@ -114,6 +152,33 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
+    /**
+     * 更新个人信息
+     *
+     * @param user
+     * @param request
+     * @return
+     */
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest request) {
+        // 1. 校验参数是否为空
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "更新信息为空");
+        }
+
+        User loginUser = userService.getLoginUser(request);
+
+        int result = userService.updateUser(user, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 注销用户（管理员）
+     *
+     * @param id
+     * @param request
+     * @return
+     */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteById(@RequestBody long id, HttpServletRequest request) {
         // 仅管理员可删除
@@ -127,6 +192,12 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
     private static boolean isAdmin(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
         return user == null || user.getUserRole() != ADMIN_ROLE;

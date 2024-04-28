@@ -2,6 +2,7 @@ package com.lyx.usercenter.mapper;
 
 import com.lyx.usercenter.model.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author timecat
