@@ -1,5 +1,7 @@
 package com.lyx.usercenter.service.impl;
 
+import java.util.*;
+
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -17,13 +19,10 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
 import static com.lyx.usercenter.constant.UserConstant.USER_LOGIN_STATE;
@@ -181,7 +180,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        if (checkUpdateFiled(user)) {
+        if (!checkUpdateFiled(user)) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "更新字段为空");
         }
         // 如果是管理员，允许更新任意用户信息
@@ -198,9 +197,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     private boolean checkUpdateFiled(User user) {
-        // todo 没有传要更新的值就，不执行update
-
-        return false;
+        return Stream.of(
+                user.getUsername(),
+                user.getAvatarUrl(),
+                user.getGender(),
+                user.getProfile(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getTags()
+        ).anyMatch(Objects::nonNull);
     }
 
     /**

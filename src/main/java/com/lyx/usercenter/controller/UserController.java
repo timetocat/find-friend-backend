@@ -2,6 +2,7 @@ package com.lyx.usercenter.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyx.usercenter.common.BaseResponse;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.common.ResultUtils;
@@ -149,6 +150,14 @@ public class UserController {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
+        return ResultUtils.success(userList);
+    }
+
+
+    @GetMapping("/recommend")
+    public BaseResponse<Page<User>> recommend(long pageSize, long pageNum, HttpServletRequest request) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        Page<User> userList = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         return ResultUtils.success(userList);
     }
 
