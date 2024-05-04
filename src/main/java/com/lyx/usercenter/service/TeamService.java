@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.dto.TeamQuery;
 import com.lyx.usercenter.model.request.TeamJoinRequest;
+import com.lyx.usercenter.model.request.TeamQuitRequest;
 import com.lyx.usercenter.model.request.TeamUpdateRequest;
 import com.lyx.usercenter.model.vo.TeamUserVO;
 
@@ -51,4 +52,22 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean joinTeam(TeamJoinRequest teamJoinInfo, User loginUser);
+
+    /**
+     * 退出队伍
+     *
+     * @param teamQuitInfo
+     * @param loginUser
+     * @return
+     */
+    boolean quitTeam(TeamQuitRequest teamQuitInfo, User loginUser);
+
+    /**
+     * 解散队伍
+     *
+     * @param id
+     * @param loginUser
+     * @return
+     */
+    boolean deleteTeam(long id, User loginUser);
 }

@@ -12,6 +12,7 @@ import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.dto.TeamQuery;
 import com.lyx.usercenter.model.request.TeamAddRequest;
 import com.lyx.usercenter.model.request.TeamJoinRequest;
+import com.lyx.usercenter.model.request.TeamQuitRequest;
 import com.lyx.usercenter.model.request.TeamUpdateRequest;
 import com.lyx.usercenter.model.vo.TeamUserVO;
 import com.lyx.usercenter.service.TeamService;
@@ -50,19 +51,6 @@ public class TeamController {
         BeanUtil.copyProperties(teamAddRequest, team);
         long teamId = teamService.addTeam(team, loginUser);
         return ResultUtils.success(teamId);
-    }
-
-    @DeleteMapping("/delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestParam long id, HttpServletRequest request) {
-        if (id < 1) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "id不正确");
-        }
-        // todo 创建人或者管理员才可以删除队伍
-        boolean result = teamService.removeById(id);
-        if (!result) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
-        }
-        return ResultUtils.success(true);
     }
 
     @PostMapping("/update")
@@ -129,4 +117,26 @@ public class TeamController {
         return ResultUtils.success(result);
     }
 
+    @PostMapping("quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    @PostMapping("delete")
+    public BaseResponse<Boolean> deleteTeam(@RequestBody long id, HttpServletRequest request) {
+        if (id < 1) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "id不正确");
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.deleteTeam(id, loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
+        }
+        return ResultUtils.success(true);
+    }
 }
