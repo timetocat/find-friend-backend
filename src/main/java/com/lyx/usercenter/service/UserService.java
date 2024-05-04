@@ -62,6 +62,22 @@ public interface UserService extends IService<User> {
     User getSafeUser(User user);
 
     /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    boolean isAdmin(HttpServletRequest request);
+
+    /**
+     * 是否为管理员
+     *
+     * @param loginUser
+     * @return
+     */
+    public boolean isAdmin(User loginUser);
+
+    /**
      * 根据标签搜索用户
      *
      * @param tagNameList

@@ -75,7 +75,7 @@ public class Team implements Serializable {
     /**
      * 创建时间
      */
-    @ApiModelProperty("密码")
+    @ApiModelProperty("创建时间")
     @TableField(value = "create_time")
     private Date createTime;
 

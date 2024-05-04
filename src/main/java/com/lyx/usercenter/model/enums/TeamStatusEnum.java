@@ -44,7 +44,7 @@ public enum TeamStatusEnum {
      * @param value
      * @return
      */
-    public static TeamStatusEnum getEnumByValue(int value) {
+    public static TeamStatusEnum getEnumByValue(Integer value) {
         if (ObjectUtil.isEmpty(value)) {
             return null;
         }

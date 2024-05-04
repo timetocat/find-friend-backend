@@ -186,7 +186,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 如果是管理员，允许更新任意用户信息
         // todo 管理员应该不能更新其他管理员账户
         // 如果是自己，只允许更新自己的信息
-        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+        if (!this.isAdmin(loginUser) && userId != loginUser.getId()) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         User oldUser = userMapper.selectById(userId);
@@ -296,7 +296,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param request
      * @return
      */
-    private static boolean isAdmin(HttpServletRequest request) {
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
         return !(user == null || user.getUserRole() != ADMIN_ROLE);
     }
@@ -307,7 +308,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param loginUser
      * @return
      */
-    private static boolean isAdmin(User loginUser) {
+    @Override
+    public boolean isAdmin(User loginUser) {
         return !(loginUser == null || loginUser.getUserRole() != ADMIN_ROLE);
     }
 }

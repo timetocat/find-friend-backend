@@ -11,6 +11,9 @@ import com.lyx.usercenter.model.domain.Team;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.dto.TeamQuery;
 import com.lyx.usercenter.model.request.TeamAddRequest;
+import com.lyx.usercenter.model.request.TeamJoinRequest;
+import com.lyx.usercenter.model.request.TeamUpdateRequest;
+import com.lyx.usercenter.model.vo.TeamUserVO;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -63,12 +66,13 @@ public class TeamController {
     }
 
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateTeam(@RequestBody Team team, HttpServletRequest request) {
-        if (team == null) {
+    public BaseResponse<Boolean> updateTeam
+            (@RequestBody TeamUpdateRequest teamUpdateRequest, HttpServletRequest request) {
+        if (teamUpdateRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
-        // todo 创建人才可以更新队伍
-        boolean result = teamService.updateById(team);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.updateTeam(teamUpdateRequest, loginUser);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新失败");
         }
@@ -89,16 +93,12 @@ public class TeamController {
     }
 
     @GetMapping("/list")
-    public BaseResponse<List<Team>> listTeam(TeamQuery teamQuery) {
+    public BaseResponse<List<TeamUserVO>> listTeam(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo 逻辑处理
-        Team team = new Team();
-        BeanUtil.copyProperties(teamQuery, team);
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
-        List<Team> teamList = teamService.list(queryWrapper);
-        // todo 信息脱敏
+        boolean isAdmin = userService.isAdmin(request);
+        List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
         return ResultUtils.success(teamList);
     }
 
@@ -119,5 +119,14 @@ public class TeamController {
         return ResultUtils.success(teamPage);
     }
 
+    @PostMapping("/join")
+    public BaseResponse<Boolean> joinTeam(@RequestParam TeamJoinRequest teamJoinRequest, HttpServletRequest request) {
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
+        return ResultUtils.success(result);
+    }
 
 }
