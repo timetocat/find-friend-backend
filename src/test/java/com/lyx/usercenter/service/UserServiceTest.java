@@ -1,6 +1,6 @@
 package com.lyx.usercenter.service;
 
-import com.lyx.usercenter.model.User;
+import com.lyx.usercenter.model.domain.User;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

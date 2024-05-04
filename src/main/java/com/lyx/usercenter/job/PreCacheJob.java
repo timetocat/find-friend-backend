@@ -2,8 +2,7 @@ package com.lyx.usercenter.job;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.lyx.usercenter.constant.RedisKeys;
-import com.lyx.usercenter.model.User;
+import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;

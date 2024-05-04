@@ -1,4 +1,4 @@
-package com.lyx.usercenter.model;
+package com.lyx.usercenter.model.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
 

@@ -1,7 +1,7 @@
 package com.lyx.usercenter.easyExcel;
 
 import cn.hutool.core.util.RandomUtil;
-import com.lyx.usercenter.model.User;
+import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

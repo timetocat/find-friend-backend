@@ -9,7 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.exception.BusinessException;
-import com.lyx.usercenter.model.User;
+import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.service.UserService;
 import com.lyx.usercenter.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;

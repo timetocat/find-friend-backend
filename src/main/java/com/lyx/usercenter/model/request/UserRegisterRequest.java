@@ -1,4 +1,4 @@
-package com.lyx.usercenter.model.domain.request;
+package com.lyx.usercenter.model.request;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -7,16 +7,19 @@ import java.io.Serializable;
 
 /**
  * @author timecat
- * @create
+ * @create 2023-12-19
  */
 @Data
-public class UserLoginRequest implements Serializable {
+public class UserRegisterRequest implements Serializable {
 
-    private static final long serialVersionUID = 4619562148257145703L;
+    private static final long serialVersionUID = 345614971164090846L;
 
     @ApiModelProperty(value = "用户账号", required = true)
     private String userAccount;
 
     @ApiModelProperty(value = "密码", required = true)
     private String userPassword;
+
+    @ApiModelProperty(value = "确认密码", required = true)
+    private String checkPassword;
 }

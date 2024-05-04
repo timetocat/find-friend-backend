@@ -1,6 +1,6 @@
 package com.lyx.usercenter.service;
 
-import com.lyx.usercenter.model.User;
+import com.lyx.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import javax.servlet.http.HttpServletRequest;
