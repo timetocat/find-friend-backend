@@ -1,5 +1,6 @@
 package com.lyx.usercenter.common;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -18,9 +19,11 @@ public class PageRequest implements Serializable {
     /**
      * 页面大小
      */
+    @ApiModelProperty("页面大小")
     protected int pageSize = 10;
     /**
      * 当前页号
      */
+    @ApiModelProperty("当前页号")
     protected int pageNum = 1;
 }

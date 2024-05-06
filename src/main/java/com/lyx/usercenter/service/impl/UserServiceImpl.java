@@ -166,7 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
         if (user == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
+            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
         }
         return user;
     }
@@ -196,6 +196,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userMapper.updateById(user);
     }
 
+    /**
+     * 校验是否有更新参数
+     *
+     * @param user
+     * @return
+     */
     private boolean checkUpdateFiled(User user) {
         return Stream.of(
                 user.getUsername(),

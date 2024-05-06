@@ -9,6 +9,7 @@ import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.Team;
 import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.domain.UserTeam;
 import com.lyx.usercenter.model.dto.TeamQuery;
 import com.lyx.usercenter.model.request.TeamAddRequest;
 import com.lyx.usercenter.model.request.TeamJoinRequest;
@@ -17,13 +18,17 @@ import com.lyx.usercenter.model.request.TeamUpdateRequest;
 import com.lyx.usercenter.model.vo.TeamUserVO;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserService;
+import com.lyx.usercenter.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author timecat
@@ -38,6 +43,8 @@ public class TeamController {
     private UserService userService;
     @Resource
     private TeamService teamService;
+    @Resource
+    private UserTeamService userTeamService;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -117,6 +124,39 @@ public class TeamController {
         return ResultUtils.success(result);
     }
 
+
+    @GetMapping("/list/my/create")
+    public BaseResponse<List<TeamUserVO>> listMyCreateTeam(TeamQuery teamQuery, HttpServletRequest request) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        Long userId = userService.getLoginUser(request).getId();
+        boolean isAdmin = userService.isAdmin(request);
+        teamQuery.setUserId(userId);
+        List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
+        return ResultUtils.success(teamList);
+    }
+
+    @GetMapping("/list/my/join")
+    public BaseResponse<List<TeamUserVO>> listMyJoinTeam(TeamQuery teamQuery, HttpServletRequest request) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        Long userId = userService.getLoginUser(request).getId();
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        List<UserTeam> userTeamList = userTeamService.list(queryWrapper);
+        // 取出不重复的队伍 id
+        Map<Long, List<UserTeam>> listMap = userTeamList.stream()
+                .collect(Collectors.groupingBy(UserTeam::getTeamId));
+        ArrayList<Long> idList = new ArrayList<>(listMap.keySet());
+        teamQuery.setIdList(idList);
+        boolean isAdmin = userService.isAdmin(request);
+        List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
+        return ResultUtils.success(teamList);
+    }
+
+
     @PostMapping("quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request) {
         if (teamQuitRequest == null) {
@@ -128,9 +168,9 @@ public class TeamController {
     }
 
     @PostMapping("delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestBody long id, HttpServletRequest request) {
-        if (id < 1) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "id不正确");
+    public BaseResponse<Boolean> deleteTeam(@RequestParam Long id, HttpServletRequest request) {
+        if (id == null || id < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "id不正确");
         }
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.deleteTeam(id, loginUser);

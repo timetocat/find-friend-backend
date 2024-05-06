@@ -28,11 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static com.lyx.usercenter.constant.RedisKeys.ADD_TEAM_LOCK;
 import static com.lyx.usercenter.constant.RedisKeys.JOIN_TEAM_DISTRIBUTED_LOCK;
@@ -104,7 +102,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         String redisKey = String.format(ADD_TEAM_LOCK + "%s", userId);
         RLock lock = redissonClient.getLock(redisKey);
         try {
-            if (lock.tryLock(0, 5, TimeUnit.SECONDS)) {
+            if (lock.tryLock(1, 5, TimeUnit.SECONDS)) {
                 log.info("getLock ADD_TEAM_LOCK: " + Thread.currentThread().getId());
                 //  g. 用户最多创建 5 个队伍
                 QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
@@ -134,9 +132,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
         } catch (InterruptedException e) {
             log.error("创建队伍时，获取锁失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建队伍失败");
-        } catch (Exception e) {
-            log.error("创建队伍时，其他异常", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建队伍失败");
         } finally {
             // 释放当前线程创建的锁
@@ -188,7 +183,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         // 不展示已过期的队伍
-        // expireTime is null or expireTime > now()
+        // expireTime is null or expireTime < now()
         queryWrapper.and(
                 qw -> qw.gt("expire_time", new Date()).or().isNull("expire_time"));
         List<Team> teamList = this.list(queryWrapper);
@@ -222,6 +217,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (teamInfo == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
+        if (!checkUpdateFiled(teamInfo)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "更新字段为空");
+        }
         Long id = teamInfo.getId();
         if (id == null || id < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "id参数错误");
@@ -235,7 +233,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(teamInfo.getStatus());
-        if (statusEnum.equals(TeamStatusEnum.SECRET)) {
+        if (TeamStatusEnum.SECRET.equals(statusEnum)) {
             if (StrUtil.isBlank(teamInfo.getPassword())) {
                 throw new BusinessException(ErrorCode.NULL_ERROR, "加密房间需要设置密码");
             }
@@ -244,6 +242,23 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         BeanUtil.copyProperties(teamInfo, updateTeam);
         return this.updateById(updateTeam);
     }
+
+    /**
+     * 校验是否有更新参数
+     *
+     * @param teamUpdateInfo
+     * @return
+     */
+    private boolean checkUpdateFiled(TeamUpdateRequest teamUpdateInfo) {
+        return Stream.of(
+                teamUpdateInfo.getName(),
+                teamUpdateInfo.getDescription(),
+                teamUpdateInfo.getExpireTime(),
+                teamUpdateInfo.getStatus(),
+                teamUpdateInfo.getPassword()
+        ).anyMatch(Objects::nonNull);
+    }
+
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -314,9 +329,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
         } catch (InterruptedException e) {
             log.error("加入队伍时，获取锁失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "加入队伍失败");
-        } catch (Exception e) {
-            log.error("加入队伍时，其他异常", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "加入队伍失败");
         } finally {
             // 释放当前线程的锁
@@ -391,7 +403,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         Team team = this.getById(id);
         Long teamId = team.getId();
         // 校验是否是队长
-        if (team.getUserId() != loginUser.getId()) {
+        if (!Objects.equals(team.getUserId(), loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         // 删除队伍
