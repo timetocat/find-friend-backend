@@ -18,6 +18,7 @@ import com.lyx.usercenter.service.UserService;
 import com.lyx.usercenter.utils.AlgorithmUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -257,12 +258,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 2. 先查询所有用户
         List<User> userList = userMapper.selectList(queryWrapper);
 
-        // Gson gson = new Gson();
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-/*            Set<String> tempTagsSet = gson.fromJson(tags, new TypeToken<Set<String>>() {
-            }.getType());*/
             Set<String> tempTagsSet = Convert.convert(new TypeReference<Set<String>>() {
             }, CharSequenceUtil.removeAll(tags, "\""));
             tempTagsSet = Optional.ofNullable(tempTagsSet)
@@ -279,43 +277,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public List<UserVO> matchUsers(long num, User loginUser) {
-        List<User> userList = this.list();
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.isNotNull("tags")
+                .select("id", "tags");
+        List<User> userList = this.list(queryWrapper);
         String tags = loginUser.getTags();
-        // Gson gson = new Gson();
-/*        List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
-        }.getType());*/
         List<String> tagList = JSONUtil.toList(tags, String.class);
-        System.out.println(tagList);
+
         // 用户列表下标(userList) => 相似度
-        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();
-        for (int i = 0; i < userList.size(); i++) {
-            User user = userList.get(i);
+        List<Pair<User, Long>> list = new ArrayList<>();
+        for (User user : userList) {
             String userTags = user.getTags();
             // 无标签过滤
             if (StrUtil.isBlank(userTags)) {
                 continue;
             }
-/*            List<String> userTagsList = gson.fromJson(userTags, new TypeToken<List<String>>() {
-            }.getType());*/
+            // 自己除外
+            if (Objects.equals(user.getId(), loginUser.getId())) {
+                continue;
+            }
             List<String> userTagsList = JSONUtil.toList(userTags, String.class);
             // 计算相似度
             long distanceScore = AlgorithmUtils.minDistance(tagList, userTagsList);
-            indexDistanceMap.put(i, distanceScore);
+            list.add(new Pair<>(user, distanceScore));
         }
-        ArrayList<UserVO> userVOList = new ArrayList<>();
-        int count = 0;
-        for (Map.Entry<Integer, Long> entry : indexDistanceMap.entrySet()) {
-            if (count >= num) {
-                break;
-            }
-            User user = userList.get(entry.getKey());
-            System.out.println(user.getId() + ":" + entry.getKey() + ":" + entry.getValue());
-            UserVO userVO = new UserVO();
-            BeanUtil.copyProperties(user, userVO);
-            userVOList.add(userVO);
-            count++;
+        List<Pair<User, Long>> toUserPairList = list.stream().sorted(
+                        (o1, o2) -> (int) (o1.getValue() - o2.getValue()))
+                .limit(num).collect(Collectors.toList());
+        // 有序userID表
+        List<Long> userVOId = toUserPairList.stream().map(
+                        pair -> pair.getKey().getId())
+                .collect(Collectors.toList());
+        // 根据id查询user信息
+        queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("id", userVOId);
+        Map<Long, List<UserVO>> userIdUserListMap = this.list(queryWrapper).stream().map(
+                user -> BeanUtil.toBean(user, UserVO.class)
+        ).collect(Collectors.groupingBy(UserVO::getId));
+        // 因为map乱序，需根据有序userId赋值
+        List<UserVO> userVOList = new ArrayList<>();
+        for (Long userId : userVOId) {
+            userVOList.add(userIdUserListMap.get(userId).get(0));
         }
-
         return userVOList;
     }
 
