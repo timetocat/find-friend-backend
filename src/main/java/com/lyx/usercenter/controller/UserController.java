@@ -10,6 +10,7 @@ import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.request.UserLoginRequest;
 import com.lyx.usercenter.model.request.UserRegisterRequest;
+import com.lyx.usercenter.model.vo.UserVO;
 import com.lyx.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -131,7 +132,8 @@ public class UserController {
     @GetMapping("/search")
     public BaseResponse<List<User>> search(String username, HttpServletRequest request) {
         // 仅限管理员可查询
-        if (isAdmin(request)) {
+        boolean isAdmin = userService.isAdmin(request);
+        if (!isAdmin) {
             throw new BusinessException(ErrorCode.NO_AUTH, "无管理员权限");
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -215,7 +217,8 @@ public class UserController {
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteById(@RequestBody long id, HttpServletRequest request) {
         // 仅管理员可删除
-        if (isAdmin(request)) {
+        boolean isAdmin = userService.isAdmin(request);
+        if (!isAdmin) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id < 0) {
@@ -226,13 +229,19 @@ public class UserController {
     }
 
     /**
-     * 是否为管理员
+     * 匹配推荐用户
      *
+     * @param num
      * @param request
      * @return
      */
-    private static boolean isAdmin(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute(USER_LOGIN_STATE);
-        return user == null || user.getUserRole() != ADMIN_ROLE;
+    @GetMapping("match")
+    public BaseResponse<List<UserVO>> matchUsers(long num, HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.matchUsers(num, loginUser));
     }
+
 }

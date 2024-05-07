@@ -40,7 +40,7 @@ class InsertUserTest {
         for (int i = 0; i < INSERT_NUM; i++) {
             User user = new User();
             user.setUsername("假lyx");
-            user.setUserAccount("lyx" + RandomUtil.randomString(3));
+            user.setUserAccount("lyx" + RandomUtil.randomString(4));
             user.setAvatarUrl("https://pic2.zhimg.com/v2-af7a97397d2940f107656415a2bbbf89_r.jpg?source=w");
             user.setProfile("定时任务测试");
             user.setGender(0);

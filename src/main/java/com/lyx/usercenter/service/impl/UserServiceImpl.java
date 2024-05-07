@@ -1,17 +1,21 @@
 package com.lyx.usercenter.service.impl;
 
-import java.util.*;
-
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.exception.BusinessException;
-import com.lyx.usercenter.model.domain.User;
-import com.lyx.usercenter.service.UserService;
 import com.lyx.usercenter.mapper.UserMapper;
+import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.vo.UserVO;
+import com.lyx.usercenter.service.UserService;
+import com.lyx.usercenter.utils.AlgorithmUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -252,12 +257,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 2. 先查询所有用户
         List<User> userList = userMapper.selectList(queryWrapper);
 
-        Gson gson = new Gson();
+        // Gson gson = new Gson();
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-            Set<String> tempTagsSet = gson.fromJson(tags, new TypeToken<Set<String>>() {
-            }.getType());
+/*            Set<String> tempTagsSet = gson.fromJson(tags, new TypeToken<Set<String>>() {
+            }.getType());*/
+            Set<String> tempTagsSet = Convert.convert(new TypeReference<Set<String>>() {
+            }, CharSequenceUtil.removeAll(tags, "\""));
             tempTagsSet = Optional.ofNullable(tempTagsSet)
                     .orElse(new HashSet<>());
             for (String tag : tagNameList) {
@@ -268,6 +275,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return true;
         }).map(this::getSafeUser).collect(Collectors.toList());
 
+    }
+
+    @Override
+    public List<UserVO> matchUsers(long num, User loginUser) {
+        List<User> userList = this.list();
+        String tags = loginUser.getTags();
+        // Gson gson = new Gson();
+/*        List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
+        }.getType());*/
+        List<String> tagList = JSONUtil.toList(tags, String.class);
+        System.out.println(tagList);
+        // 用户列表下标(userList) => 相似度
+        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            String userTags = user.getTags();
+            // 无标签过滤
+            if (StrUtil.isBlank(userTags)) {
+                continue;
+            }
+/*            List<String> userTagsList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());*/
+            List<String> userTagsList = JSONUtil.toList(userTags, String.class);
+            // 计算相似度
+            long distanceScore = AlgorithmUtils.minDistance(tagList, userTagsList);
+            indexDistanceMap.put(i, distanceScore);
+        }
+        ArrayList<UserVO> userVOList = new ArrayList<>();
+        int count = 0;
+        for (Map.Entry<Integer, Long> entry : indexDistanceMap.entrySet()) {
+            if (count >= num) {
+                break;
+            }
+            User user = userList.get(entry.getKey());
+            System.out.println(user.getId() + ":" + entry.getKey() + ":" + entry.getValue());
+            UserVO userVO = new UserVO();
+            BeanUtil.copyProperties(user, userVO);
+            userVOList.add(userVO);
+            count++;
+        }
+
+        return userVOList;
     }
 
     /**

@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyx.usercenter.common.BaseResponse;
+import com.lyx.usercenter.common.DeleteRequest;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
@@ -48,6 +49,13 @@ public class TeamController {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
+    /**
+     * 添加队伍
+     *
+     * @param teamAddRequest
+     * @param request
+     * @return
+     */
     @PostMapping("/add")
     public BaseResponse<Long> addTeam(@RequestBody TeamAddRequest teamAddRequest, HttpServletRequest request) {
         if (teamAddRequest == null) {
@@ -60,9 +68,16 @@ public class TeamController {
         return ResultUtils.success(teamId);
     }
 
+    /**
+     * 更新队伍
+     *
+     * @param teamUpdateRequest
+     * @param request
+     * @return
+     */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateTeam
-            (@RequestBody TeamUpdateRequest teamUpdateRequest, HttpServletRequest request) {
+    (@RequestBody TeamUpdateRequest teamUpdateRequest, HttpServletRequest request) {
         if (teamUpdateRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
@@ -74,6 +89,12 @@ public class TeamController {
         return ResultUtils.success(true);
     }
 
+    /**
+     * 根据 id 获取队伍
+     *
+     * @param id
+     * @return
+     */
     @GetMapping("/get")
     public BaseResponse<Team> getTeam(long id) {
         if (id < 1) {
@@ -87,6 +108,13 @@ public class TeamController {
         return ResultUtils.success(team);
     }
 
+    /**
+     * 批量获取队伍
+     *
+     * @param teamQuery
+     * @param request
+     * @return
+     */
     @GetMapping("/list")
     public BaseResponse<List<TeamUserVO>> listTeam(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
@@ -97,6 +125,12 @@ public class TeamController {
         return ResultUtils.success(teamList);
     }
 
+    /**
+     * 分页获取队伍
+     *
+     * @param teamQuery
+     * @return
+     */
     @GetMapping("/list/page")
     public BaseResponse<Page<Team>> listPageTeam(TeamQuery teamQuery) {
         if (teamQuery == null) {
@@ -114,6 +148,13 @@ public class TeamController {
         return ResultUtils.success(teamPage);
     }
 
+    /**
+     * 加入队伍
+     *
+     * @param teamJoinRequest
+     * @param request
+     * @return
+     */
     @PostMapping("/join")
     public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest, HttpServletRequest request) {
         if (teamJoinRequest == null) {
@@ -124,7 +165,13 @@ public class TeamController {
         return ResultUtils.success(result);
     }
 
-
+    /**
+     * 获取我创建的队伍
+     *
+     * @param teamQuery
+     * @param request
+     * @return
+     */
     @GetMapping("/list/my/create")
     public BaseResponse<List<TeamUserVO>> listMyCreateTeam(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
@@ -137,6 +184,13 @@ public class TeamController {
         return ResultUtils.success(teamList);
     }
 
+    /**
+     * 获取我加入的队伍
+     *
+     * @param teamQuery
+     * @param request
+     * @return
+     */
     @GetMapping("/list/my/join")
     public BaseResponse<List<TeamUserVO>> listMyJoinTeam(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
@@ -156,7 +210,13 @@ public class TeamController {
         return ResultUtils.success(teamList);
     }
 
-
+    /**
+     * 退出队伍
+     *
+     * @param teamQuitRequest
+     * @param request
+     * @return
+     */
     @PostMapping("quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request) {
         if (teamQuitRequest == null) {
@@ -167,11 +227,19 @@ public class TeamController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 解散队伍
+     *
+     * @param deleteRequest
+     * @param request
+     * @return
+     */
     @PostMapping("delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestParam Long id, HttpServletRequest request) {
-        if (id == null || id < 1) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "id不正确");
+    public BaseResponse<Boolean> deleteTeam(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+        if (deleteRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        long id = deleteRequest.getId();
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.deleteTeam(id, loginUser);
         if (!result) {

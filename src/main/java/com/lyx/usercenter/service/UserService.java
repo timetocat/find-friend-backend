@@ -2,6 +2,7 @@ package com.lyx.usercenter.service;
 
 import com.lyx.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lyx.usercenter.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -84,4 +85,6 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<User> searchUsersByTags(List<String> tagNameList);
+
+    List<UserVO> matchUsers(long num, User loginUser);
 }
