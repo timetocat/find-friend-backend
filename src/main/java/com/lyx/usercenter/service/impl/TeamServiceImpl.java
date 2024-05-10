@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
@@ -405,7 +406,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return userTeamService.remove(queryWrapper);
     }
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean deleteTeam(long id, User loginUser) {
         // 校验队伍是否存在
@@ -416,13 +416,19 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         // 删除队伍
-        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("team_id", teamId);
-        boolean result = userTeamService.remove(userTeamQueryWrapper);
+        return disbandTeam(teamId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean disbandTeam(long id) {
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("team_id", id);
+        boolean result = userTeamService.remove(queryWrapper);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除队伍信息失败");
         }
-        return this.removeById(teamId);
+        return this.removeById(id);
     }
 
     /**
