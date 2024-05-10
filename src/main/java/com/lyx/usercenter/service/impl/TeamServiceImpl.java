@@ -102,7 +102,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         String redisKey = String.format(ADD_TEAM_LOCK + "%s", userId);
         RLock lock = redissonClient.getLock(redisKey);
         try {
-            if (lock.tryLock(1, 5, TimeUnit.SECONDS)) {
+            if (lock.tryLock(0, 5, TimeUnit.SECONDS)) {
                 log.info("getLock ADD_TEAM_LOCK: " + Thread.currentThread().getId());
                 //  g. 用户最多创建 5 个队伍
                 QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
@@ -176,6 +176,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 // 默认为公共
                 statusEnum = TeamStatusEnum.PUBLIC;
             }
+            // 查询时，不是管理员，队伍状态为私有。（可优化TODO）
             if (!isAdmin && statusEnum.equals(TeamStatusEnum.PRIVATE)) {
                 throw new BusinessException(ErrorCode.NO_AUTH);
             }
@@ -325,7 +326,15 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 userTeam.setUserId(userId);
                 userTeam.setTeamId(teamId);
                 userTeam.setJoinTime(new Date());
-                return userTeamService.save(userTeam);
+                List<Long> beforeDate = userTeamService.getBeforeDate(userId, teamId);
+                if (beforeDate.size() == 1) {
+                    userTeamService.updateDeleteByJoin(userId, teamId);
+                    userTeam.setId(beforeDate.get(0));
+                    // 曾经加入过，修改逻辑删除字段即可
+                    return userTeamService.updateById(userTeam);
+                } else {
+                    return userTeamService.save(userTeam);
+                }
             }
         } catch (InterruptedException e) {
             log.error("加入队伍时，获取锁失败", e);
@@ -358,7 +367,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         UserTeam queryUserTeam = new UserTeam();
         queryUserTeam.setTeamId(teamId);
         queryUserTeam.setUserId(userId);
-        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>(queryUserTeam);
         long count = userTeamService.count(queryWrapper);
         if (count == 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "未加入队伍");
@@ -370,7 +379,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         } else {
             // 队伍至少还剩两人
             // 是队长的情况
-            if (team.getUserId() == userId) {
+            if (Objects.equals(team.getUserId(), userId)) {
                 // 把队伍转移给最早加入的用户
                 // 查询已加入队伍的所以用户和加入时间
                 QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();

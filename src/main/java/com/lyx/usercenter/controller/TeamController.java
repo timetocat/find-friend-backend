@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -121,7 +122,37 @@ public class TeamController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean isAdmin = userService.isAdmin(request);
+        // 查询队伍列表
         List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
+        final List<Long> teamIdList = teamList.stream()
+                .map(TeamUserVO::getId).collect(Collectors.toList());
+        // 判断当前用户是否已加入队伍
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        try {
+            User loginUser = userService.getLoginUser(request);
+            userTeamQueryWrapper.eq("user_id", loginUser.getId())
+                    .in("team_id", teamIdList);
+            List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+            // 已加入的队伍 id 集合
+            Set<Long> hasJoinTeamIdSet = userTeamList.stream()
+                    .map(UserTeam::getTeamId).collect(Collectors.toSet());
+            teamList.forEach(team -> {
+                boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
+                team.setHasJoin(hasJoin);
+            });
+        } catch (Exception e) {
+            log.error("处理异常", e);
+        }
+        // 查询队伍已加入的人数
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("team_id", teamIdList);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
+        // 队伍id => 加入此队伍的UserTeam列表
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream()
+                .collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> team.setHasJoinNum
+                (teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>())
+                        .size()));
         return ResultUtils.success(teamList);
     }
 
@@ -207,6 +238,7 @@ public class TeamController {
         teamQuery.setIdList(idList);
         boolean isAdmin = userService.isAdmin(request);
         List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
+        teamList.forEach(team -> team.setHasJoin(true));
         return ResultUtils.success(teamList);
     }
 

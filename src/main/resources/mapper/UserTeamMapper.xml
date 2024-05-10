@@ -5,13 +5,13 @@
 <mapper namespace="com.lyx.usercenter.mapper.UserTeamMapper">
 
     <resultMap id="BaseResultMap" type="com.lyx.usercenter.model.domain.UserTeam">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="userId" column="user_id" jdbcType="BIGINT"/>
-            <result property="teamId" column="team_id" jdbcType="BIGINT"/>
-            <result property="joinTime" column="join_time" jdbcType="TIMESTAMP"/>
-            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="teamId" column="team_id" jdbcType="BIGINT"/>
+        <result property="joinTime" column="join_time" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -19,4 +19,20 @@
         join_time,create_time,update_time,
         is_delete
     </sql>
+    <!--  查询是否被逻辑删除  -->
+    <select id="getDeleteDate" resultType="long">
+        select id
+        from `user_team`
+        where user_id = #{user_id}
+          and team_id = #{team_id}
+        group by id
+    </select>
+    <!--  因为重新加入需要解除删除  -->
+    <update id="updateDeleteByJoin">
+        update user_team
+        set is_delete = 0
+        where user_id = #{user_id}
+          and team_id = #{team_id}
+    </update>
+
 </mapper>
