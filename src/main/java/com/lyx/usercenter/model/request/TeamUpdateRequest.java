@@ -1,5 +1,6 @@
 package com.lyx.usercenter.model.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -43,6 +44,7 @@ public class TeamUpdateRequest implements Serializable {
      * 过期时间
      */
     @ApiModelProperty("过期时间")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date expireTime;
 
     /**

@@ -1,5 +1,6 @@
 package com.lyx.usercenter.model.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -71,6 +72,7 @@ public class UserVO implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
     @ApiModelProperty("创建时间")
     private Date createTime;
 

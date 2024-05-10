@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -49,6 +50,7 @@ public class Team implements Serializable {
      */
     @ApiModelProperty("过期时间")
     @TableField(value = "expire_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
     private Date expireTime;
 
     /**
@@ -84,6 +86,7 @@ public class Team implements Serializable {
      */
     @ApiModelProperty("更新时间")
     @TableField(value = "update_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
     private Date updateTime;
 
     /**
