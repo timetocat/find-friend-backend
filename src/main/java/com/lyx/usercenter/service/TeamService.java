@@ -4,9 +4,9 @@ import com.lyx.usercenter.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.dto.TeamQuery;
-import com.lyx.usercenter.model.request.TeamJoinRequest;
-import com.lyx.usercenter.model.request.TeamQuitRequest;
-import com.lyx.usercenter.model.request.TeamUpdateRequest;
+import com.lyx.usercenter.model.request.team.TeamJoinRequest;
+import com.lyx.usercenter.model.request.team.TeamQuitRequest;
+import com.lyx.usercenter.model.request.team.TeamUpdateRequest;
 import com.lyx.usercenter.model.vo.TeamUserVO;
 
 import java.util.List;

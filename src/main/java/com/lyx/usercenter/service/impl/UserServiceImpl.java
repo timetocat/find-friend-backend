@@ -261,8 +261,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-            Set<String> tempTagsSet = Convert.convert(new TypeReference<Set<String>>() {
-            }, CharSequenceUtil.removeAll(tags, "\""));
+//            Set<String> tempTagsSet = Convert.convert(new TypeReference<Set<String>>() {
+//            }, CharSequenceUtil.removeAll(tags, "\""));
+            Set<String> tempTagsSet = JSONUtil.toBean(tags, new TypeReference<Set<String>>() {
+            }, false);
             tempTagsSet = Optional.ofNullable(tempTagsSet)
                     .orElse(new HashSet<>());
             for (String tag : tagNameList) {

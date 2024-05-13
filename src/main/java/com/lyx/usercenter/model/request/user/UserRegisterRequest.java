@@ -1,4 +1,4 @@
-package com.lyx.usercenter.model.request;
+package com.lyx.usercenter.model.request.user;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;

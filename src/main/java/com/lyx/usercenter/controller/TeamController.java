@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyx.usercenter.common.BaseResponse;
-import com.lyx.usercenter.common.DeleteRequest;
+import com.lyx.usercenter.common.IdRequest;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
@@ -12,10 +12,10 @@ import com.lyx.usercenter.model.domain.Team;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.domain.UserTeam;
 import com.lyx.usercenter.model.dto.TeamQuery;
-import com.lyx.usercenter.model.request.TeamAddRequest;
-import com.lyx.usercenter.model.request.TeamJoinRequest;
-import com.lyx.usercenter.model.request.TeamQuitRequest;
-import com.lyx.usercenter.model.request.TeamUpdateRequest;
+import com.lyx.usercenter.model.request.team.TeamAddRequest;
+import com.lyx.usercenter.model.request.team.TeamJoinRequest;
+import com.lyx.usercenter.model.request.team.TeamQuitRequest;
+import com.lyx.usercenter.model.request.team.TeamUpdateRequest;
 import com.lyx.usercenter.model.vo.TeamUserVO;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserService;
@@ -262,16 +262,16 @@ public class TeamController {
     /**
      * 解散队伍
      *
-     * @param deleteRequest
+     * @param idRequest
      * @param request
      * @return
      */
     @PostMapping("delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
-        if (deleteRequest == null) {
+    public BaseResponse<Boolean> deleteTeam(@RequestBody IdRequest idRequest, HttpServletRequest request) {
+        if (idRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
+        long id = idRequest.getId();
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.deleteTeam(id, loginUser);
         if (!result) {

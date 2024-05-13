@@ -8,8 +8,8 @@ import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.User;
-import com.lyx.usercenter.model.request.UserLoginRequest;
-import com.lyx.usercenter.model.request.UserRegisterRequest;
+import com.lyx.usercenter.model.request.user.UserLoginRequest;
+import com.lyx.usercenter.model.request.user.UserRegisterRequest;
 import com.lyx.usercenter.model.vo.UserVO;
 import com.lyx.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.lyx.usercenter.constant.RedisKeys.INDEX_RECOMMEND;
-import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
 import static com.lyx.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
 /**

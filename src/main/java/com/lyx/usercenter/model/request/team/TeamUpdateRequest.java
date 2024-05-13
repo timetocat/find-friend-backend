@@ -1,4 +1,4 @@
-package com.lyx.usercenter.model.request;
+package com.lyx.usercenter.model.request.team;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
@@ -8,11 +8,20 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
+ * 用户更新请求
+ *
  * @author timecat
  * @create
  */
 @Data
-public class TeamAddRequest implements Serializable {
+public class TeamUpdateRequest implements Serializable {
+
+    /**
+     * id
+     */
+    @ApiModelProperty("id")
+    private Long id;
+
     /**
      * 队伍名称
      */
@@ -39,12 +48,6 @@ public class TeamAddRequest implements Serializable {
     private Date expireTime;
 
     /**
-     * 用户id（队长 id）
-     */
-    @ApiModelProperty("用户id（队长 id）")
-    private Long userId;
-
-    /**
      * 0 - 公开，1 - 私有，2 - 加密
      */
     @ApiModelProperty("0 - 公开，1 - 私有，2 - 加密")
@@ -56,5 +59,5 @@ public class TeamAddRequest implements Serializable {
     @ApiModelProperty("密码")
     private String password;
 
-    private static final long serialVersionUID = 3214364098574920835L;
+    private static final long serialVersionUID = -3638576553979274705L;
 }
