@@ -1,5 +1,6 @@
 package com.lyx.usercenter.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import com.lyx.usercenter.common.BaseResponse;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.common.IdRequest;
@@ -7,6 +8,7 @@ import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.request.friend.FriendAddRequest;
+import com.lyx.usercenter.model.request.friend.ReadApplyRequest;
 import com.lyx.usercenter.model.vo.FriendRecordsVO;
 import com.lyx.usercenter.service.FriendsService;
 import com.lyx.usercenter.service.UserService;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author timecat
@@ -30,7 +33,7 @@ public class FriendsController {
     private UserService userService;
 
     @PostMapping("/add")
-    public BaseResponse<Boolean> addFriendRecoder
+    public BaseResponse<Boolean> addFriendRecorder
             (@RequestBody FriendAddRequest friendAddRequest, HttpServletRequest request) {
         if (friendAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -61,7 +64,7 @@ public class FriendsController {
         return ResultUtils.success(records);
     }
 
-    @GetMapping("/agree")
+    @PostMapping("/agree")
     public BaseResponse<Boolean> agree(@RequestBody IdRequest idRequest, HttpServletRequest request) {
         if (idRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -75,4 +78,34 @@ public class FriendsController {
         return ResultUtils.success(true);
     }
 
+    @PostMapping("cancelApply")
+    public BaseResponse<Boolean> cancelApply(@RequestBody IdRequest idRequest, HttpServletRequest request) {
+        if (idRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long id = idRequest.getId();
+        User loginUser = userService.getLoginUser(request);
+        boolean result = friendsService.cancelApply(id, loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "撤销失败");
+        }
+        return ResultUtils.success(true);
+    }
+
+    @PostMapping("/read")
+    public BaseResponse<Boolean> read(@RequestBody ReadApplyRequest readApplyRequest, HttpServletRequest request) {
+        if (readApplyRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求错误");
+        }
+        Set<Long> ids = readApplyRequest.getIds();
+        if (CollUtil.isEmpty(ids)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "确认已读申请为空");
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = friendsService.toRead(ids, loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+        return ResultUtils.success(true);
+    }
 }

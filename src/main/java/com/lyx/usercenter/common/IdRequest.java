@@ -6,7 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 删除请求
+ * 通用Id请求
  *
  * @author timecat
  * @create

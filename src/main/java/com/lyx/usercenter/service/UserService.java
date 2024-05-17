@@ -6,6 +6,7 @@ import com.lyx.usercenter.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 用户服务
@@ -86,5 +87,38 @@ public interface UserService extends IService<User> {
      */
     List<User> searchUsersByTags(List<String> tagNameList);
 
+    /**
+     * 匹配推荐用户
+     *
+     * @param num
+     * @param loginUser
+     * @return
+     */
     List<UserVO> matchUsers(long num, User loginUser);
+
+    /**
+     * 获取用户好友
+     *
+     * @param currentUser
+     * @return
+     */
+    List<UserVO> getFriends(User currentUser);
+
+    /**
+     * 更新标签
+     *
+     * @param tags
+     * @param currentUser
+     * @return
+     */
+    Integer updateTags(Set<String> tags, User currentUser);
+
+    /**
+     * 刪除好友
+     *
+     * @param friendId
+     * @param loginUser
+     * @return
+     */
+    boolean removeFriend(long friendId, User loginUser);
 }

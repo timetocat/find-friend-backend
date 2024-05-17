@@ -8,6 +8,7 @@ import com.lyx.usercenter.model.request.friend.FriendAddRequest;
 import com.lyx.usercenter.model.vo.FriendRecordsVO;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author timecat
@@ -57,4 +58,22 @@ public interface FriendsService extends IService<Friends> {
      * @return
      */
     boolean agreeApply(long fromId, User loginUser);
+
+    /**
+     * 撤销我的申请
+     *
+     * @param id
+     * @param loginUser
+     * @return
+     */
+    boolean cancelApply(long id, User loginUser);
+
+    /**
+     * 设置申请为已读
+     *
+     * @param ids
+     * @param loginUser
+     * @return
+     */
+    boolean toRead(Set<Long> ids, User loginUser);
 }

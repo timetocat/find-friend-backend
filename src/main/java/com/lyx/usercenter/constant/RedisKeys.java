@@ -8,10 +8,11 @@ package com.lyx.usercenter.constant;
  */
 public interface RedisKeys {
 
+    String FIND_FRIENDS = "findFriends:";
     /**
      * user相关
      */
-    String FIND_FRIENDS_USER = "findFriends:user:";
+    String FIND_FRIENDS_USER = FIND_FRIENDS + "user:";
     /**
      * 首页推荐缓存key prefix
      */
@@ -24,7 +25,7 @@ public interface RedisKeys {
     /**
      * team 相关
      */
-    String FIND_FRIENDS_TEAM = "findFriends:team:";
+    String FIND_FRIENDS_TEAM = FIND_FRIENDS + "team:";
     /**
      * 创建队伍锁key prefix
      */
@@ -38,9 +39,23 @@ public interface RedisKeys {
     /**
      * friend 相关
      */
-    String FIND_FRIENDS_FRIEND = "find:friends:friend:";
+    String FIND_FRIENDS_FRIEND = FIND_FRIENDS + "friend:";
     /**
      * 添加好友
      */
     String ADD_FRIEND = FIND_FRIENDS_FRIEND + "add:";
+
+    /**
+     * chat 相关
+     */
+    String FIND_FRIENDS_CHAT = FIND_FRIENDS + "chat:";
+    /**
+     * 私聊 key prefix
+     */
+    String PRIVATE_CHAT_KEY = FIND_FRIENDS_CHAT + "private:";
+    /**
+     * 群聊 key prefix
+     */
+    String TEAM_CHAT_KEY = FIND_FRIENDS_CHAT + "team:";
+
 }

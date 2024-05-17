@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyx.usercenter.common.BaseResponse;
 import com.lyx.usercenter.common.ErrorCode;
+import com.lyx.usercenter.common.IdRequest;
 import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.request.user.UpdateTagsRequest;
 import com.lyx.usercenter.model.request.user.UserLoginRequest;
 import com.lyx.usercenter.model.request.user.UserRegisterRequest;
 import com.lyx.usercenter.model.vo.UserVO;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -50,7 +53,6 @@ public class UserController {
     public BaseResponse<Long> register(@RequestBody UserRegisterRequest userRegisterRequest) {
         // 校验是否为空
         if (userRegisterRequest == null) {
-            //return ResultUtils.error(ErrorCode.PARAMS_ERROR);
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
         String userAccount = userRegisterRequest.getUserAccount();
@@ -207,6 +209,27 @@ public class UserController {
     }
 
     /**
+     * 更新tags (标签)
+     *
+     * @param tagsRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/update/tags")
+    public BaseResponse<Integer> updateTags(@RequestBody UpdateTagsRequest tagsRequest, HttpServletRequest request) {
+        if (tagsRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Set<String> tags = tagsRequest.getTags();
+        User loginUser = userService.getLoginUser(request);
+        int result = userService.updateTags(tags, loginUser);
+        if (result != 1) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新失败");
+        }
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 注销用户（管理员）
      *
      * @param id
@@ -243,4 +266,36 @@ public class UserController {
         return ResultUtils.success(userService.matchUsers(num, loginUser));
     }
 
+    /**
+     * 获取用户好友
+     *
+     * @param request
+     * @return
+     */
+    @GetMapping("/friends")
+    public BaseResponse<List<UserVO>> getFriends(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.getFriends(loginUser));
+    }
+
+    /**
+     * 刪除好友
+     *
+     * @param idRequest
+     * @param request
+     * @return
+     */
+    @DeleteMapping("/friends/delete")
+    public BaseResponse<Boolean> deleteFriends(@RequestBody IdRequest idRequest, HttpServletRequest request) {
+        if (idRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        long friendId = idRequest.getId();
+        boolean result = userService.removeFriend(friendId, loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "刪除好友失敗");
+        }
+        return ResultUtils.success(true);
+    }
 }

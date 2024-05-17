@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,6 +73,7 @@ public class FriendsServiceImpl extends ServiceImpl<FriendsMapper, Friends>
         if (userId.equals(receiveId)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能添加自己为好友");
         }
+        // 防止重复添加好友
         String redisKey = String.format(ADD_FRIEND + "%s", userId);
         RLock lock = redissonClient.getLock(redisKey);
         try {
@@ -133,7 +135,7 @@ public class FriendsServiceImpl extends ServiceImpl<FriendsMapper, Friends>
         // 查询当前用户所申请、同意的记录
         QueryWrapper<Friends> friendsQueryWrapper = new QueryWrapper<>();
         friendsQueryWrapper.eq("from_id", loginUser.getId())
-                .ne("status", EXPIRED.getValue())
+                .notIn("status", EXPIRED.getValue(), CANCEL.getValue())
                 .orderByDesc("create_time");
         List<Friends> friendList = this.list(friendsQueryWrapper);
         return getFriendRecordsVOList(friendList, RECEIVE_ROLES);
@@ -182,6 +184,46 @@ public class FriendsServiceImpl extends ServiceImpl<FriendsMapper, Friends>
         return flag.get();
     }
 
+    @Override
+    public boolean cancelApply(long id, User loginUser) {
+        Long userId = loginUser.getId();
+        if (id < 1 || userId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "id非法");
+        }
+        Friends friend = this.getById(id);
+        if (friend == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "申请不存在");
+        }
+        boolean isAdmin = userService.isAdmin(loginUser);
+        // 管理员和自己才可以撤销申请
+        if (!isAdmin && !Objects.equals(friend.getFromId(), userId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "非法操作");
+        }
+        if (friend.getStatus() != NOT_DEAL.getValue()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "申请已处理");
+        }
+        friend.setStatus(CANCEL.getValue());
+        return this.updateById(friend);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean toRead(Set<Long> ids, User loginUser) {
+        boolean result = false;
+        for (Long id : ids) {
+            QueryWrapper<Friends> friendsQueryWrapper = new QueryWrapper<>();
+            friendsQueryWrapper.eq("id", id)
+                    .eq("status", NOT_DEAL.getValue())
+                    .eq("is_read", UNREAD.getValue());
+            Friends friend = this.getOne(friendsQueryWrapper);
+            if (friend != null) {
+                friend.setIsRead(READ.getValue());
+                result = this.updateById(friend);
+            }
+        }
+        return result;
+    }
+
     private String addFriendId(String ids, long addId) {
         Set<Long> idsSet = StrConvertUtils.stringToLongSet(ids);
         idsSet.add(addId);
@@ -207,14 +249,9 @@ public class FriendsServiceImpl extends ServiceImpl<FriendsMapper, Friends>
         }).collect(Collectors.toList());
     }
 
-
     private UserFriends getFriendIds(long userId) {
         QueryWrapper<UserFriends> userFriendsQueryWrapper = new QueryWrapper<>();
         userFriendsQueryWrapper.eq("user_id", userId);
         return userFriendsService.getOne(userFriendsQueryWrapper);
     }
 }
-
-
-
-

@@ -2,9 +2,7 @@ package com.lyx.usercenter.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -13,13 +11,17 @@ import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.mapper.UserMapper;
 import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.domain.UserFriends;
 import com.lyx.usercenter.model.vo.UserVO;
+import com.lyx.usercenter.service.UserFriendsService;
 import com.lyx.usercenter.service.UserService;
 import com.lyx.usercenter.utils.AlgorithmUtils;
+import com.lyx.usercenter.utils.StrConvertUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
@@ -52,12 +54,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    private UserFriendsService userFriendsService;
+
     /**
      * @param userAccount   用户昵称
      * @param userPassword  用户密码
      * @param checkPassword 校验密码
      * @return 新用户 id
      */
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
         //1. 校验
@@ -103,7 +109,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!saveResult) {
             return -1;
         }
-        return user.getId();
+        Long userId = user.getId();
+        UserFriends userFriends = new UserFriends();
+        userFriends.setUserId(userId);
+        boolean save = userFriendsService.save(userFriends);
+        if (!save) {
+            return -1;
+        }
+        return userId;
     }
 
     /**
@@ -322,6 +335,64 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             userVOList.add(userIdUserListMap.get(userId).get(0));
         }
         return userVOList;
+    }
+
+    @Override
+    public List<UserVO> getFriends(User currentUser) {
+        Long userId = currentUser.getId();
+        QueryWrapper<UserFriends> userFriendsQueryWrapper = new QueryWrapper<>();
+        userFriendsQueryWrapper.eq("user_id", userId);
+        UserFriends userFriends = userFriendsService.getOne(userFriendsQueryWrapper);
+        if (userFriends == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+        Set<Long> friendIdSet = StrConvertUtils.stringToLongSet(userFriends.getFriendIds());
+        if (CollUtil.isEmpty(friendIdSet)) {
+            return Collections.emptyList();
+        }
+        return friendIdSet.stream().map(friendId ->
+                        BeanUtil.toBean(this.getById(friendId), UserVO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Integer updateTags(Set<String> tags, User currentUser) {
+        Long userId = currentUser.getId();
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在");
+        }
+        String newTags = StrConvertUtils.stringSetToString(tags);
+        user.setTags(newTags);
+        return userMapper.updateById(user);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean removeFriend(long friendId, User loginUser) {
+        Long userId = loginUser.getId();
+        UserFriends userFriends = this.getUserFriends(userId);
+        UserFriends friendUserFriends = this.getUserFriends(friendId);
+        // 判断好友关系是否存在
+        if (userFriends == null || friendUserFriends == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "您不是好友");
+        }
+        userFriends.setFriendIds(removeFriendId(userFriends.getFriendIds(), friendId));
+        friendUserFriends.setFriendIds(removeFriendId(friendUserFriends.getFriendIds(), userId));
+        return (userFriendsService.updateById(userFriends)
+                && userFriendsService.updateById(friendUserFriends));
+    }
+
+    private UserFriends getUserFriends(long userId) {
+        QueryWrapper<UserFriends> userFriendsQueryWrapper = new QueryWrapper<>();
+        userFriendsQueryWrapper.eq("user_id", userId);
+        return userFriendsService.getOne(userFriendsQueryWrapper);
+    }
+
+    private String removeFriendId(String ids, long removeId) {
+        Set<Long> friendIds = StrConvertUtils.stringToLongSet(ids);
+        friendIds.removeIf(id -> id == removeId);
+        return StrConvertUtils.longSetToString(friendIds);
     }
 
     /**
