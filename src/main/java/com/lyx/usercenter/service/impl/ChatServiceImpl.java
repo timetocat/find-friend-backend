@@ -18,13 +18,15 @@ import com.lyx.usercenter.model.vo.MessageVO;
 import com.lyx.usercenter.service.ChatService;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserService;
-import com.lyx.usercenter.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -47,8 +49,6 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
     private UserService userService;
     @Resource
     private TeamService teamService;
-    @Resource
-    private UserTeamService userTeamService;
     @Resource
     private RedisTemplate<String, List<MessageVO>> redisTemplate;
 
@@ -133,7 +133,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
         }
         Long userId = loginUser.getId();
         // 判断当前用户是否属于该队伍
-        boolean checkJoinTeam = userTeamService.checkJoinTeam(userId, teamId);
+        boolean checkJoinTeam = teamService.checkJoinTeam(userId, teamId);
         if (!checkJoinTeam) {
             throw new BusinessException(ErrorCode.NO_AUTH, "未加入该队伍");
         }

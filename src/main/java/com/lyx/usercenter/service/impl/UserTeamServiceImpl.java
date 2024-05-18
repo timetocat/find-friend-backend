@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.exception.BusinessException;
+import com.lyx.usercenter.mapper.UserTeamMapper;
 import com.lyx.usercenter.model.domain.Team;
 import com.lyx.usercenter.model.domain.UserTeam;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserTeamService;
-import com.lyx.usercenter.mapper.UserTeamMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -29,6 +30,7 @@ public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam>
     private UserTeamMapper userTeamMapper;
 
     @Resource
+    @Lazy // 解决依赖循环
     private TeamService teamService;
 
     @Override
@@ -47,7 +49,7 @@ public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam>
         }
     }
 
-    @Override
+    @Deprecated
     public boolean checkJoinTeam(long userId, long teamId) {
         // 判断队伍是否存在
         Team team = teamService.getById(teamId);

@@ -37,6 +37,7 @@ public interface UserTeamService extends IService<UserTeam> {
      * @param teamId
      * @return
      */
+    @Deprecated
     boolean checkJoinTeam(long userId, long teamId);
 
 }

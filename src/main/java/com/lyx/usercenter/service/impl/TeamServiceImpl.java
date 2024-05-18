@@ -430,6 +430,19 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.removeById(id);
     }
 
+    @Override
+    public boolean checkJoinTeam(Long userId, Long teamId) {
+        // 判断队伍是否存在
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍不存在");
+        }
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId)
+                .eq("team_id", teamId);
+        return userTeamService.count(queryWrapper) > 0;
+    }
+
     /**
      * 获取当前队伍人数
      *

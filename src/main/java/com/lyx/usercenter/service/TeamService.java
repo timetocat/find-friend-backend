@@ -78,4 +78,13 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean disbandTeam(long id);
+
+    /**
+     * 判断是否加入队伍
+     *
+     * @param userId
+     * @param teamId
+     * @return
+     */
+    boolean checkJoinTeam(Long userId, Long teamId);
 }
