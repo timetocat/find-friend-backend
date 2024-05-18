@@ -9,6 +9,7 @@ import com.lyx.usercenter.common.ErrorCode;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.mapper.ChatMapper;
 import com.lyx.usercenter.model.domain.Chat;
+import com.lyx.usercenter.model.domain.Team;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.enums.ChatScopeIntEnum;
 import com.lyx.usercenter.model.request.chat.ChatRequest;
@@ -17,19 +18,20 @@ import com.lyx.usercenter.model.vo.MessageVO;
 import com.lyx.usercenter.service.ChatService;
 import com.lyx.usercenter.service.TeamService;
 import com.lyx.usercenter.service.UserService;
+import com.lyx.usercenter.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static com.lyx.usercenter.constant.RedisKeys.PRIVATE_CHAT_KEY;
-import static com.lyx.usercenter.constant.RedisKeys.TEAM_CHAT_KEY;
-import static com.lyx.usercenter.model.enums.ChatScopeIntEnum.PRIVATE_CHAT;
+import static com.lyx.usercenter.constant.RedisKeys.*;
+import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
+import static com.lyx.usercenter.model.enums.ChatScopeIntEnum.*;
 
 /**
  * @author timecat
@@ -45,6 +47,8 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
     private UserService userService;
     @Resource
     private TeamService teamService;
+    @Resource
+    private UserTeamService userTeamService;
     @Resource
     private RedisTemplate<String, List<MessageVO>> redisTemplate;
 
@@ -97,6 +101,110 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
         return messageVO;
     }
 
+    @Override
+    public MessageVO getHallMessage(Chat chat) {
+        User fromUser = userService.getById(chat.getFromId());
+        ChatUserInfo fromChatUserInfo = BeanUtil.copyProperties(fromUser, ChatUserInfo.class);
+        MessageVO messageVO = BeanUtil.copyProperties(chat, MessageVO.class);
+        messageVO.setFromUser(fromChatUserInfo);
+        return messageVO;
+    }
+
+    @Override
+    public List<MessageVO> getHallChat(User loginUser) {
+        List<MessageVO> chatRecordsCache = getCache(HALL_CHAT, NULL_KEY);
+        if (chatRecordsCache != null) {
+            chatRecordsCache = checkIsMyMessage(chatRecordsCache, loginUser);
+            // 刷新缓存有效期
+            saveCache(HALL_CHAT, NULL_KEY, chatRecordsCache);
+            return chatRecordsCache;
+        }
+        LambdaQueryWrapper<Chat> chatLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatLambdaQueryWrapper.eq(Chat::getScope, HALL_CHAT.getValue());
+        List<MessageVO> chatRecords = getMessageList(loginUser, null, chatLambdaQueryWrapper);
+        saveCache(HALL_CHAT, NULL_KEY, chatRecords);
+        return chatRecords;
+    }
+
+    @Override
+    public List<MessageVO> getTeamChat(Long teamId, User loginUser) {
+        if (teamId == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求错误");
+        }
+        Long userId = loginUser.getId();
+        // 判断当前用户是否属于该队伍
+        boolean checkJoinTeam = userTeamService.checkJoinTeam(userId, teamId);
+        if (!checkJoinTeam) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "未加入该队伍");
+        }
+        List<MessageVO> chatRecordsCache = getCache(TEAM_CHAT, String.valueOf(teamId));
+        if (chatRecordsCache != null) {
+            chatRecordsCache = checkIsMyMessage(chatRecordsCache, loginUser);
+            // 刷新缓存有效期
+            saveCache(TEAM_CHAT, String.valueOf(teamId), chatRecordsCache);
+            return chatRecordsCache;
+        }
+        // todo 管理员是否有权查看队伍聊天室信息？
+        Team team = teamService.getById(teamId);
+        LambdaQueryWrapper<Chat> chatLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatLambdaQueryWrapper.eq(Chat::getTeamId, teamId)
+                .eq(Chat::getScope, TEAM_CHAT.getValue());
+        List<MessageVO> chatRecords = getMessageList(loginUser, team.getUserId(), chatLambdaQueryWrapper);
+        saveCache(TEAM_CHAT, String.valueOf(teamId), chatRecords);
+        return chatRecords;
+    }
+
+    @Override
+    public void deleteKey(ChatScopeIntEnum chatScopeEnum, String key) {
+        String chatRedisKey = getChatRedisKey(chatScopeEnum, key);
+        redisTemplate.delete(chatRedisKey);
+    }
+
+
+    /**
+     * 获取大厅或队伍消息
+     *
+     * @param loginUser
+     * @param userId
+     * @param chatLambdaQueryWrapper
+     * @return
+     */
+    private List<MessageVO> getMessageList(User loginUser, Long userId, LambdaQueryWrapper<Chat> chatLambdaQueryWrapper) {
+        List<Chat> list = this.list(chatLambdaQueryWrapper);
+        return list.stream().map(chat -> {
+            MessageVO messageVO = getHallMessage(chat);
+            boolean isCaptain = userId != null && userId.equals(chat.getFromId());
+            Integer userRole = userService.getById(chat.getFromId()).getUserRole();
+            // 在大厅中设置消息是否为管理员发送
+            // 在队伍中设置消息是否为队长发送
+            if (userRole == ADMIN_ROLE || isCaptain) {
+                messageVO.setIsAdmin(true);
+            }
+            if (chat.getFromId().equals(loginUser.getId())) {
+                messageVO.setIsMy(true);
+            }
+            messageVO.setCreateTime(DateUtil.format(chat.getCreateTime(),
+                    "yyyy年MM月dd日 HH:mm:ss"));
+            return messageVO;
+        }).collect(Collectors.toList());
+    }
+
+    private List<MessageVO> checkIsMyMessage(List<MessageVO> chatRecordsCache, User loginUser) {
+        Long userId = loginUser.getId();
+        return chatRecordsCache.stream().peek(chat -> {
+            // 发送信息不是我
+            if (!Objects.equals(chat.getFromUser().getUserId(), userId)
+                    && Boolean.TRUE.equals(chat.getIsMy())) {
+                chat.setIsMy(false);
+            }
+            // 发送信息是我
+            if (Objects.equals(chat.getFromUser().getUserId(), userId)
+                    && Boolean.TRUE.equals(!chat.getIsMy())) {
+                chat.setIsMy(true);
+            }
+        }).collect(Collectors.toList());
+    }
+
     /**
      * 保存聊天记录缓存
      *
@@ -136,13 +244,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
      * @return
      */
     private String getChatRedisKey(ChatScopeIntEnum chatScopeEnum, String key) {
-        Function<ChatScopeIntEnum, String> getRedisKey = PRIVATE_CHAT.equals(chatScopeEnum) ?
-                scope -> String.format(PRIVATE_CHAT_KEY + "%s", key) :
-                scope -> String.format(TEAM_CHAT_KEY + "%s", key);
-        return getRedisKey.toString();
+        UnaryOperator<String> getRedisKey = redisKeyMap.get(chatScopeEnum);
+        return getRedisKey.apply(key);
+    }
+
+    private static final Map<ChatScopeIntEnum, UnaryOperator<String>> redisKeyMap = new EnumMap<>(ChatScopeIntEnum.class);
+
+    static {
+        redisKeyMap.put(PRIVATE_CHAT, key -> String.format(PRIVATE_CHAT_KEY + "%s", key));
+        redisKeyMap.put(TEAM_CHAT, key -> String.format(TEAM_CHAT_KEY + "%s", key));
+        redisKeyMap.put(HALL_CHAT, key -> String.format(HALL_CHAT_KEY));
     }
 }
-
-
-
-

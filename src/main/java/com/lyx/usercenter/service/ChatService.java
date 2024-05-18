@@ -3,6 +3,7 @@ package com.lyx.usercenter.service;
 import com.lyx.usercenter.model.domain.Chat;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.enums.ChatScopeIntEnum;
 import com.lyx.usercenter.model.request.chat.ChatRequest;
 import com.lyx.usercenter.model.vo.MessageVO;
 
@@ -33,4 +34,36 @@ public interface ChatService extends IService<Chat> {
      * @return
      */
     MessageVO chatResult(Long userId, Long toId, Chat chat);
+
+    /**
+     * 获取大厅信息
+     *
+     * @param chat
+     * @return
+     */
+    MessageVO getHallMessage(Chat chat);
+
+    /**
+     * 获取大厅聊天信息
+     *
+     * @param loginUser
+     * @return
+     */
+    List<MessageVO> getHallChat(User loginUser);
+
+    /**
+     * 获取队伍聊天信息
+     *
+     * @param teamId
+     * @param loginUser
+     * @return
+     */
+    List<MessageVO> getTeamChat(Long teamId, User loginUser);
+
+    /**
+     * 删除缓存
+     *
+     * @param key
+     */
+    void deleteKey(ChatScopeIntEnum chatScopeEnum, String key);
 }

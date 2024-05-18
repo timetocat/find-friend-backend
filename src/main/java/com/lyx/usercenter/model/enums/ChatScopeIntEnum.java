@@ -12,7 +12,8 @@ import lombok.Getter;
 public enum ChatScopeIntEnum implements BaseIntEnum {
 
     PRIVATE_CHAT(0, "私聊"),
-    TEAM_CHAT(1, "群聊");
+    TEAM_CHAT(1, "群聊"),
+    HALL_CHAT(2, "大厅");
 
     private final int value;
 

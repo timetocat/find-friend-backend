@@ -8,6 +8,11 @@ package com.lyx.usercenter.constant;
  */
 public interface RedisKeys {
 
+    /**
+     * 空 key
+     */
+    String NULL_KEY = "";
+
     String FIND_FRIENDS = "findFriends:";
     /**
      * user相关
@@ -57,5 +62,9 @@ public interface RedisKeys {
      * 群聊 key prefix
      */
     String TEAM_CHAT_KEY = FIND_FRIENDS_CHAT + "team:";
+    /**
+     * 大厅 key prefix
+     */
+    String HALL_CHAT_KEY = FIND_FRIENDS_CHAT + "hall";
 
 }

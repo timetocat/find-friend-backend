@@ -12,7 +12,31 @@ import java.util.List;
  */
 public interface UserTeamService extends IService<UserTeam> {
 
-    public List<Long> getBeforeDate(long userId, long teamId);
+    /**
+     * 获取曾经退出队伍的信息
+     *
+     * @param userId
+     * @param teamId
+     * @return
+     */
+    List<Long> getBeforeDate(long userId, long teamId);
 
-    public boolean updateDeleteByJoin(long userId, long teamId);
+    /**
+     * 再次加入队伍接触逻辑删除
+     *
+     * @param userId
+     * @param teamId
+     * @return
+     */
+    boolean updateDeleteByJoin(long userId, long teamId);
+
+    /**
+     * 判断用户是否加入该队伍
+     *
+     * @param userId
+     * @param teamId
+     * @return
+     */
+    boolean checkJoinTeam(long userId, long teamId);
+
 }
