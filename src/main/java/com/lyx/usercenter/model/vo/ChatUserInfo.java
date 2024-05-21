@@ -1,5 +1,6 @@
 package com.lyx.usercenter.model.vo;
 
+import cn.hutool.core.annotation.Alias;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ public class ChatUserInfo implements Serializable {
     /**
      * userId
      */
+    @Alias("id")
     @ApiModelProperty("用户id")
     private Long userId;
 

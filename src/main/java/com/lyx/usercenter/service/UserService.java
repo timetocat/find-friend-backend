@@ -2,6 +2,7 @@ package com.lyx.usercenter.service;
 
 import com.lyx.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lyx.usercenter.model.request.user.SearchFriendsRequest;
 import com.lyx.usercenter.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -121,4 +122,22 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean removeFriend(long friendId, User loginUser);
+
+    /**
+     * 判断是否是好友
+     *
+     * @param loginUserId
+     * @param friendId
+     * @return
+     */
+    boolean isFriend(long loginUserId, long friendId);
+
+    /**
+     * 搜索好友
+     *
+     * @param loginUser
+     * @param friendsRequest
+     * @return
+     */
+    List<UserVO> searchFriend(User loginUser, SearchFriendsRequest friendsRequest);
 }

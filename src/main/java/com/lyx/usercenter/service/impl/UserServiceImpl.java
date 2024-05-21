@@ -3,6 +3,7 @@ package com.lyx.usercenter.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -12,6 +13,7 @@ import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.mapper.UserMapper;
 import com.lyx.usercenter.model.domain.User;
 import com.lyx.usercenter.model.domain.UserFriends;
+import com.lyx.usercenter.model.request.user.SearchFriendsRequest;
 import com.lyx.usercenter.model.vo.UserVO;
 import com.lyx.usercenter.service.UserFriendsService;
 import com.lyx.usercenter.service.UserService;
@@ -27,6 +29,7 @@ import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -274,8 +277,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 3. 判断内存中是否包含要求的标签
         return userList.stream().filter(user -> {
             String tags = user.getTags();
-//            Set<String> tempTagsSet = Convert.convert(new TypeReference<Set<String>>() {
-//            }, CharSequenceUtil.removeAll(tags, "\""));
             Set<String> tempTagsSet = JSONUtil.toBean(tags, new TypeReference<Set<String>>() {
             }, false);
             tempTagsSet = Optional.ofNullable(tempTagsSet)
@@ -383,6 +384,52 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 && userFriendsService.updateById(friendUserFriends));
     }
 
+    @Override
+    public boolean isFriend(long loginUserId, long friendId) {
+        QueryWrapper<UserFriends> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", loginUserId);
+        UserFriends userFriends = userFriendsService.getOne(queryWrapper);
+        Set<Long> friendIds = StrConvertUtils.stringToLongSet(userFriends.getFriendIds());
+        AtomicBoolean isFriend = new AtomicBoolean(false);
+        // 小Bug friendIds.forEach(id -> isFriend.set(id == friendId));
+        for (Long id : friendIds) {
+            if (id == friendId) {
+                isFriend.set(true);
+                break;
+            }
+        }
+        return isFriend.get();
+    }
+
+    @Override
+    public List<UserVO> searchFriend(User loginUser, SearchFriendsRequest friendsRequest) {
+        String username = friendsRequest.getUsername();
+        String userAccount = friendsRequest.getUserAccount();
+        UserFriends userFriends = getUserFriends(loginUser.getId());
+        if (userFriends == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+        Set<Long> friendIds = StrConvertUtils.stringToLongSet(userFriends.getFriendIds());
+        if (CollUtil.isEmpty(friendIds)) {
+            // 无好友
+            return Collections.emptyList();
+        }
+        if (CharSequenceUtil.isAllBlank(userAccount, username)) {
+            return friendIds.stream().map(friendId ->
+                    BeanUtil.toBean(this.getById(friendId), UserVO.class)
+            ).collect(Collectors.toList());
+        }
+        String pattern = String.format(".*%s.*", username);
+        return friendIds.stream().map(friendId -> {
+            UserVO userVO = BeanUtil.toBean(this.getById(friendId), UserVO.class);
+            if ((CharSequenceUtil.isNotBlank(username) && Pattern.matches(pattern, userVO.getUsername()))
+                    || (userVO.getUserAccount().equals(userAccount))) {
+                return userVO;
+            }
+            return null;
+        }).collect(Collectors.toList());
+    }
+
     private UserFriends getUserFriends(long userId) {
         QueryWrapper<UserFriends> userFriendsQueryWrapper = new QueryWrapper<>();
         userFriendsQueryWrapper.eq("user_id", userId);
@@ -444,7 +491,3 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return !(loginUser == null || loginUser.getUserRole() != ADMIN_ROLE);
     }
 }
-
-
-
-

@@ -1,5 +1,6 @@
 package com.lyx.usercenter.model.vo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -20,6 +21,13 @@ public class UserVO implements Serializable {
      */
     @ApiModelProperty("id")
     private Long id;
+
+    /**
+     * 用户账号
+     */
+    @ApiModelProperty("用户账号")
+    @TableField(value = "user_account")
+    private String userAccount;
 
     /**
      * 用户昵称

@@ -9,6 +9,7 @@ import com.lyx.usercenter.common.IdRequest;
 import com.lyx.usercenter.common.ResultUtils;
 import com.lyx.usercenter.exception.BusinessException;
 import com.lyx.usercenter.model.domain.User;
+import com.lyx.usercenter.model.request.user.SearchFriendsRequest;
 import com.lyx.usercenter.model.request.user.UpdateTagsRequest;
 import com.lyx.usercenter.model.request.user.UserLoginRequest;
 import com.lyx.usercenter.model.request.user.UserRegisterRequest;
@@ -298,4 +299,17 @@ public class UserController {
         }
         return ResultUtils.success(true);
     }
+
+    @PostMapping("/searchFriend")
+    public BaseResponse<List<UserVO>> searchFriend
+            (@RequestBody SearchFriendsRequest friendsRequest, HttpServletRequest request) {
+        if (friendsRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        List<UserVO> friendList = userService.searchFriend(loginUser, friendsRequest);
+        return ResultUtils.success(friendList);
+    }
+
+
 }

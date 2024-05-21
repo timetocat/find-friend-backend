@@ -61,7 +61,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
             throw new BusinessException(ErrorCode.NULL_ERROR, "未正确私聊用户");
         }
         // 先查询缓存中是否有私聊信息
-        String key = String.format("%dto%d", toId, userId);
+        String key = String.format("%dto%d", userId, toId);
         List<MessageVO> chatRecordsCache = getCache(PRIVATE_CHAT, key);
         if (chatRecordsCache != null) {
             // 刷新缓存有效期
@@ -248,7 +248,8 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
         return getRedisKey.apply(key);
     }
 
-    private static final Map<ChatScopeIntEnum, UnaryOperator<String>> redisKeyMap = new EnumMap<>(ChatScopeIntEnum.class);
+    private static final Map<ChatScopeIntEnum, UnaryOperator<String>>
+            redisKeyMap = new EnumMap<>(ChatScopeIntEnum.class);
 
     static {
         redisKeyMap.put(PRIVATE_CHAT, key -> String.format(PRIVATE_CHAT_KEY + "%s", key));
