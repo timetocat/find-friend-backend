@@ -1,6 +1,7 @@
 package com.lyx.usercenter.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyx.usercenter.common.BaseResponse;
@@ -26,10 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -126,6 +124,9 @@ public class TeamController {
         List<TeamUserVO> teamList = teamService.listTeam(teamQuery, isAdmin);
         final List<Long> teamIdList = teamList.stream()
                 .map(TeamUserVO::getId).collect(Collectors.toList());
+        if (CollUtil.isEmpty(teamIdList)) {
+            return ResultUtils.success(teamList);
+        }
         // 判断当前用户是否已加入队伍
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         try {

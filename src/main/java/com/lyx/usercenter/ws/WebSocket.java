@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.lyx.usercenter.constant.RedisKeys.NULL_KEY;
 import static com.lyx.usercenter.constant.UserConstant.ADMIN_ROLE;
@@ -136,7 +137,7 @@ public class WebSocket {
                 SESSIONS.add(session);
                 SESSION_POOL.put(userId, session);
                 log.info("有新用户加入，userId={},当前在线人数：{}", userId, SESSION_POOL.size());
-                sendAllUsers();
+                // sendAllUsers();
             }
         } catch (Exception e) {
             log.error("连接失败！", e);
@@ -147,19 +148,19 @@ public class WebSocket {
     /**
      * 发送给所有在线用户
      */
-    private void sendAllUsers() {
+    /*private void sendAllUsers() {
         log.info("【WebSocket消息】发送所有在线用户信息");
         HashMap<String, List<ChatUserInfo>> stringListHashMap = new HashMap<>(0);
         List<ChatUserInfo> chatUserInfos = new ArrayList<>();
-        stringListHashMap.put("users", chatUserInfos);
         for (Serializable key : SESSION_POOL.keySet()) {
             User user = userService.getById(key);
             ChatUserInfo chatUserInfo = new ChatUserInfo();
             BeanUtils.copyProperties(user, chatUserInfo);
             chatUserInfos.add(chatUserInfo);
         }
-        sendAllMessage(JSONUtil.toJsonStr(stringListHashMap));
-    }
+        stringListHashMap.put("users", chatUserInfos);
+        sendAllMessage(JSONUtil.toJsonStr(stringListHashMap), null);
+    }*/
 
     @OnClose
     public void onClose(Session session, @PathParam(value = "userId") String userId,
@@ -177,7 +178,7 @@ public class WebSocket {
                     SESSIONS.remove(session);
                 }
                 log.info("[WebSocket消息] 连接断开，当前总数为：" + SESSION_POOL.size());
-                sendAllUsers();
+                // sendAllUsers();
             }
         } catch (Exception e) {
             log.error("断开连接失败！", e);
@@ -233,9 +234,8 @@ public class WebSocket {
         if (fromUser.getUserRole() == ADMIN_ROLE) {
             messageVO.setIsAdmin(true);
         }
-        messageVO.setIsMy(checkIsMe(userId));
         String jsonStr = JSONUtil.toJsonStr(messageVO);
-        sendAllMessage(jsonStr);
+        sendAllMessage(jsonStr, userId);
         saveChat(messageVO);
         chatService.deleteKey(HALL_CHAT, NULL_KEY);
     }
@@ -245,11 +245,17 @@ public class WebSocket {
      *
      * @param message
      */
-    private void sendAllMessage(String message) {
+    private void sendAllMessage(String message, Long userId) {
         log.info("[WebSocket消息] 广播消息：" + message);
+        AtomicBoolean flag = new AtomicBoolean(false);
+        if (userId == null) {
+            flag.set(true);
+        }
         for (Session session : SESSIONS) {
             try {
-                if (session.isOpen()) {
+                flag.set(!session.getPathParameters().get("userId")
+                        .equals(String.valueOf(userId)));
+                if (flag.get() && session.isOpen()) {
                     synchronized (session) {
                         session.getBasicRemote().sendText(message);
                     }
@@ -275,10 +281,9 @@ public class WebSocket {
         if (isAdmin) {
             messageVO.setIsAdmin(true);
         }
-        messageVO.setIsMy(checkIsMe(userId));
         String jsonStr = JSONUtil.toJsonStr(messageVO);
         try {
-            broadcast(String.valueOf(team.getId()), jsonStr);
+            broadcast(String.valueOf(team.getId()), jsonStr, userId);
             saveChat(messageVO);
             chatService.deleteKey(TEAM_CHAT, String.valueOf(team.getId()));
             log.info("{}在id为{}的{}队伍内聊天，在线{}人",
@@ -294,9 +299,13 @@ public class WebSocket {
      * @param teamId
      * @param message
      */
-    private void broadcast(String teamId, String message) {
+    private void broadcast(String teamId, String message, Long userId) {
         ConcurrentHashMap<String, WebSocket> map = ROOMS.get(teamId);
-        map.values().forEach(webSocket -> webSocket.sendMessage(message));
+        map.forEach((key, value) -> {
+            if (!key.equals(String.valueOf(userId))) {
+                value.sendMessage(message);
+            }
+        });
     }
 
     /**
@@ -327,8 +336,9 @@ public class WebSocket {
         }
         Session session = SESSION_POOL.get(String.valueOf(toId));
         MessageVO messageVO = setChatResult(userId, messageRequest);
-        messageVO.setIsMy(checkIsMe(userId));
         if (session != null) {
+            messageVO.setIsMy(checkIsMe(messageRequest.getToId()));
+            messageVO.setIsAdmin(userService.getById(userId).getUserRole().equals(ADMIN_ROLE));
             String jsonStr = JSONUtil.toJsonStr(messageVO);
             sendOneMessage(String.valueOf(toId), jsonStr);
             log.info("发送给用户{}，消息：{}", messageVO.getToUser().getUsername(), jsonStr);

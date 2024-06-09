@@ -1,5 +1,6 @@
 package com.lyx.usercenter.controller;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -165,6 +166,23 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
+    @GetMapping("/userinfoVO")
+    public BaseResponse<UserVO> getUserInfoVO(Long id, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+        if (id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "id为空或不符合要求");
+        }
+        User user = userService.getById(id);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+        UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+        return ResultUtils.success(userVO);
+    }
+
 
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommend(long pageSize, long pageNum, HttpServletRequest request) {
@@ -280,6 +298,23 @@ public class UserController {
     }
 
     /**
+     * 是否为好友
+     *
+     * @param id
+     * @param request
+     * @return
+     */
+    @GetMapping("/isFriend")
+    public BaseResponse<Boolean> isFriend(Long id, HttpServletRequest request) {
+        if (id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.isFriend(loginUser.getId(), id);
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 刪除好友
      *
      * @param idRequest
@@ -287,7 +322,7 @@ public class UserController {
      * @return
      */
     @DeleteMapping("/friends/delete")
-    public BaseResponse<Boolean> deleteFriends(@RequestBody IdRequest idRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteFriends(IdRequest idRequest, HttpServletRequest request) {
         if (idRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

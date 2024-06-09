@@ -100,7 +100,7 @@ public class FriendsServiceImpl extends ServiceImpl<FriendsMapper, Friends>
                 return this.save(newFriend);
             }
         } catch (InterruptedException e) {
-            log.error("添加好友，获取锁失败", e);
+            log.error("添加好友，系统异常", e);
         } finally {
             // 只能释放自己的锁
             if (lock.isHeldByCurrentThread()) {
